@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>ReelVault | Premium Video Downloader</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+    <div class="background-glow"></div>
+    <div class="container">
+        <nav>
+            <h1>REEL<span>VAULT</span></h1>
+        </nav>
+        
+        <section class="hero">
+            <h2>Download High-Quality Media Instantly</h2>
+            <p>Paste your Instagram, TikTok, or YouTube link below.</p>
+            
+            <div class="input-group">
+                <input type="text" id="urlInput" placeholder="Paste link here (e.g., https://www.instagram.com/reels/...)">
+                <button onclick="getDownload()" id="downloadBtn">Snag Video</button>
+            </div>
+
+            <div id="loading" class="loading-spinner" style="display:none;"></div>
+            <div id="error-message" class="error-message" style="display:none;"></div>
+
+            <div id="result" class="glass-card" style="display:none;">
+                <img id="videoThumbnail" src="" alt="Video Thumbnail">
+                <div class="video-info">
+                    <h3 id="videoTitle">Video Title</h3>
+                    <p id="videoDuration">Duration: <span id="durationVal"></span></p>
+                    
+                    <div class="format-options">
+                        <button class="format-btn active" data-format="video" onclick="selectFormat('video')">Video (MP4)</button>
+                        <button class="format-btn" data-format="mp3" onclick="selectFormat('mp3')">Audio (MP3)</button>
+                        <button class="format-btn" data-format="wav" onclick="selectFormat('wav')">Audio (WAV)</button>
+                    </div>
+
+                    <a id="downloadLink" href="#" target="_blank" class="download-btn">Download Now</a>
+                </div>
+            </div>
+        </section>
+    </div>
+    <script src="js/main.js"></script>
+</body>
+</html>
