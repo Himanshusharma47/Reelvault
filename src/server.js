@@ -11,18 +11,71 @@ app.use(express.static('public')); // Serve frontend
 
 app.get('/api/info', async (req, res) => {
     const { url } = req.query;
+
+    if (!url) {
+        return res.status(400).json({ error: "⚠️ No URL provided. Please paste a link." });
+    }
+
     try {
         const info = await ytdlp.getInfoAsync(url);
-        console.log("Video Info Retrieved:", { title: info.title, thumbnail: info.thumbnail, thumbnails: info.thumbnails ? info.thumbnails.length : 0 });
+        
+        // Debug: log all available keys to understand the object shape
+        console.log("All info keys:", Object.keys(info));
+        console.log("Duration fields:", { duration: info.duration, duration_string: info.duration_string });
+        console.log("Thumbnail fields:", { thumbnail: info.thumbnail, thumbnails: info.thumbnails ? info.thumbnails.length : 0 });
+
+        // --- Extract thumbnail ---
+        let thumbnail = info.thumbnail || null;
+        if (!thumbnail && info.thumbnails && info.thumbnails.length > 0) {
+            // Pick the last (usually highest quality) thumbnail
+            const lastThumb = info.thumbnails[info.thumbnails.length - 1];
+            thumbnail = typeof lastThumb === 'string' ? lastThumb : lastThumb.url || lastThumb.src || null;
+        }
+
+        // --- Extract duration ---
+        let duration = info.duration_string || null;
+        if (!duration && info.duration) {
+            // info.duration is usually in seconds, format it
+            const totalSec = Math.round(Number(info.duration));
+            if (!isNaN(totalSec)) {
+                const hrs = Math.floor(totalSec / 3600);
+                const mins = Math.floor((totalSec % 3600) / 60);
+                const secs = totalSec % 60;
+                duration = hrs > 0
+                    ? `${hrs}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+                    : `${mins}:${String(secs).padStart(2, '0')}`;
+            }
+        }
+
+        console.log("Resolved →", { title: info.title, thumbnail, duration });
+
         res.json({
             title: info.title,
-            thumbnail: info.thumbnail,
-            downloadUrl: info.url, // Direct link
-            duration: info.duration_string
+            thumbnail: thumbnail,
+            downloadUrl: info.url,
+            duration: duration
         });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: "Could not fetch video. Check link.", details: err.message });
+        console.error("Info fetch error:", err.message);
+        const errMsg = (err.message || '').toLowerCase();
+
+        if (errMsg.includes('private') || errMsg.includes('login') || errMsg.includes('authentication')) {
+            return res.status(403).json({ error: "🔒 This content is private or requires login. Only public videos can be downloaded." });
+        }
+        if (errMsg.includes('not found') || errMsg.includes('404') || errMsg.includes('does not exist') || errMsg.includes('unavailable')) {
+            return res.status(404).json({ error: "🔍 Video not found. It may have been deleted or the link is incorrect." });
+        }
+        if (errMsg.includes('unsupported') || errMsg.includes('no video')) {
+            return res.status(400).json({ error: "🚫 This URL doesn't contain downloadable video content." });
+        }
+        if (errMsg.includes('geo') || errMsg.includes('country') || errMsg.includes('region')) {
+            return res.status(403).json({ error: "🌍 This video is not available in your region." });
+        }
+        if (errMsg.includes('age') || errMsg.includes('sign in')) {
+            return res.status(403).json({ error: "🔞 This content is age-restricted and cannot be downloaded." });
+        }
+
+        res.status(500).json({ error: "❌ Could not fetch this video. Please double-check the link and try again." });
     }
 });
 
